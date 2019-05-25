@@ -1,26 +1,21 @@
 from __future__ import division
 
-from models import *
-from utils.logger import *
-from utils.utils import *
-from utils.datasets import *
-from utils.parse_config import *
-from test import evaluate
-
-from terminaltables import AsciiTable
-
-import os
-import sys
-import time
-import datetime
 import argparse
+import datetime
+import os
+import time
 
 import torch
-from torch.utils.data import DataLoader
-from torchvision import datasets
-from torchvision import transforms
+from terminaltables import AsciiTable
 from torch.autograd import Variable
-import torch.optim as optim
+from torch.utils.data import DataLoader
+
+from models import *
+from test import evaluate
+from utils.datasets import *
+from utils.logger import *
+from utils.parse_config import *
+from utils.utils import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -29,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_accumulations", type=int, default=2, help="number of gradient accums before step")
     parser.add_argument("--model_def", type=str, default="config/yolov3.cfg", help="path to model definition file")
     parser.add_argument("--data_config", type=str, default="config/coco.data", help="path to data config file")
-    parser.add_argument("--pretrained_weights", type=str, help="if specified starts from checkpoint model")
+    parser.add_argument("--pretrained_weights", type=str,default="weights/yolov3.weights",  help="if specified starts from checkpoint model")
     parser.add_argument("--n_cpu", type=int, default=0, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
     parser.add_argument("--checkpoint_interval", type=int, default=1, help="interval between saving model weights")
@@ -131,7 +126,7 @@ if __name__ == "__main__":
                 for j, yolo in enumerate(model.yolo_layers):
                     for name, metric in yolo.metrics.items():
                         if name != "grid_size":
-                            tensorboard_log += [(f"{name}_{j+1}", metric)]
+                            tensorboard_log += [(f"{name}_{j + 1}", metric)]
                 tensorboard_log += [("loss", loss.item())]
                 logger.list_of_scalars_summary(tensorboard_log, batches_done)
 

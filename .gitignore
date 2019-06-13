@@ -16,3 +16,5 @@ data/*
 weights/*
 
 logs
+train
+checkpoints_back

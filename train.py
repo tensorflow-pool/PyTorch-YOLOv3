@@ -2,13 +2,9 @@ from __future__ import division
 
 import argparse
 import datetime
-import os
-import time
+import logging
 
-import torch
 from terminaltables import AsciiTable
-from torch.autograd import Variable
-from torch.utils.data import DataLoader
 
 from models import *
 from test import evaluate
@@ -17,14 +13,32 @@ from utils.logger import *
 from utils.parse_config import *
 from utils.utils import *
 
+
+def init_log():
+    prefix = time.strftime("%Y-%m-%d-%H:%M:%S")
+    file_path = "train/models_{}".format(prefix)
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
+
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.INFO)
+    fh = logging.FileHandler("{}/train.log".format(file_path))
+    # create formatter#
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    # add formatter to ch
+    fh.setFormatter(formatter)
+    logging.getLogger().addHandler(fh)
+
+
 if __name__ == "__main__":
+    init_log()
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
     parser.add_argument("--batch_size", type=int, default=4, help="size of each image batch")
     parser.add_argument("--gradient_accumulations", type=int, default=2, help="number of gradient accums before step")
     parser.add_argument("--model_def", type=str, default="config/yolov3.cfg", help="path to model definition file")
     parser.add_argument("--data_config", type=str, default="config/coco.data", help="path to data config file")
-    parser.add_argument("--pretrained_weights", type=str,default="weights/yolov3.weights",  help="if specified starts from checkpoint model")
+    parser.add_argument("--pretrained_weights", type=str, default="weights/yolov3.weights", help="if specified starts from checkpoint model")
     parser.add_argument("--n_cpu", type=int, default=0, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
     parser.add_argument("--checkpoint_interval", type=int, default=1, help="interval between saving model weights")
@@ -32,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument("--compute_map", default=False, help="if True computes mAP every tenth batch")
     parser.add_argument("--multiscale_training", default=False, help="allow for multi-scale training")
     opt = parser.parse_args()
-    print(opt)
+    logging.info(opt)
 
     logger = Logger("logs")
 
@@ -138,12 +152,12 @@ if __name__ == "__main__":
             time_left = datetime.timedelta(seconds=epoch_batches_left * (time.time() - start_time) / (batch_i + 1))
             log_str += f"\n---- ETA {time_left}"
 
-            print(log_str)
+            logging.info(log_str)
 
             model.seen += imgs.size(0)
 
         if epoch % opt.evaluation_interval == 0:
-            print("\n---- Evaluating Model ----")
+            logging.info("\n---- Evaluating Model ----")
             # Evaluate the model on the validation set
             precision, recall, AP, f1, ap_class = evaluate(
                 model,
@@ -166,8 +180,8 @@ if __name__ == "__main__":
             ap_table = [["Index", "Class name", "AP"]]
             for i, c in enumerate(ap_class):
                 ap_table += [[c, class_names[c], "%.5f" % AP[i]]]
-            print(AsciiTable(ap_table).table)
-            print(f"---- mAP {AP.mean()}")
+            logging.info(AsciiTable(ap_table).table)
+            logging.info(f"---- mAP {AP.mean()}")
 
         if epoch % opt.checkpoint_interval == 0:
             torch.save(model.state_dict(), f"checkpoints/yolov3_ckpt_%d.pth" % epoch)
